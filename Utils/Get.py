@@ -29,24 +29,18 @@ def get_data(path, sep=',', header=0, txt=True) -> pd.DataFrame:
 	return data
 
 
-def get_classes(df, class_id, var) -> dict:
+def get_class(df, class_id, year) -> pd.DataFrame:
 	"""
-	Get classes of the dataFrame depend to class_id and the var
+	Get class of the dataFrame depend to class_id and the year
 	:param pd.DataFrame df: the data frame used
-	:param np.ndarray class_id: the value used as classes
-	:param str var: the variable in which we focus
-	:return: classes, containing the indices of each id
-	:rtype: dict
+	:param str class_id: the value used as classes
+	:param int year: the year in which we focus
+	:return: the dataFrame containing data from the year only
+	:rtype: pd.DataFrame
 	"""
-	
-	classes = {}
-	
-	for id_value in class_id:
-		indices = np.where(df[var] == id_value)
-		# print(indices.shape[2])  # Number of element in each array
-		classes[id_value] = indices[0]  # Add the indices to the dictionary
-	
-	return classes
+	# Creating a mask between the start and the end of the year
+	mask = (df[class_id] > str(year-1)+"-12-31") & (df[class_id] < str(year+1)+"-01-01")
+	return df.loc[mask]
 
 
 def get_nan(df, on="dataframe") -> np.ndarray:
