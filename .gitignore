@@ -132,3 +132,5 @@ dmypy.json
 *.xml
 *.iml
 *.pdf
+*.tmp
+Files/DOCS/~$pport_Clerget.docx
