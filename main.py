@@ -3,7 +3,7 @@ import os
 import pandas as pd
 
 from Utils.Get import get_data, get_nan, get_duplicate
-from Utils.Graphics import plot_month
+from Utils.Graphics import plot_month, plot_time_slider
 
 if __name__ == '__main__':
 	file_path_Train = "Files/DailyDelhiClimateTrain.csv"
@@ -36,4 +36,5 @@ if __name__ == '__main__':
 	dataFrame['date'] = pd.to_datetime(dataFrame['date'])
 	dataFrame.set_index("date", inplace=True)
 	
-	plot_month(dataFrame, 'meantemp', 2013, 1, '%d', ["Days", "Mean Temperatures", "Mean temperatures per day"])
+	# plot_month(dataFrame, 'meantemp', 2013, 1, '%d', ["Days", "Mean Temperatures", "Mean temperatures per day"])
+	plot_time_slider(dataFrame, 'meantemp', ['2013-01-01', '2017-04-24'], 30, 5, 'timeslider of meantemp')
