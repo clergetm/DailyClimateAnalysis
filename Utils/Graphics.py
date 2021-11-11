@@ -1,73 +1,58 @@
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
-import seaborn as sns
+from matplotlib.dates import DateFormatter
 
 
-def plot_box_graphic(df, column_id, column_target):
+def plot_time_series(df, column_name, dateformat="%y-%m-%d", labels=None):
 	"""
-	Create a box graphic of the column_id by the column_target
-	:param pd.DataFrame df: the dataframe
-	:param str column_id: the name of the class column
-	:param str column_target: the name of the targeted column
+	Plot the given dataframe with time series as index
+	:param pd.DataFrame df: the dataframe used
+	:param str column_name: the column used to plot
+	:param str dateformat: the dateformat for the horizontal axis
+	:param list labels: labels contains the xlabel, the ylabel and the title of the plot
 	"""
-	column_data = []
-	class_id = np.unique(df[column_id])
-	for id_value in class_id:
-		indices = np.where(df[column_id] == id_value)
-		column_data.append(df[column_target].values[indices])
+	if labels is None:
+		labels = ["x", "y", "title"]
+	fig, ax = plt.subplots(figsize=(12, 8))
+	ax.plot(df.index.values,
+	        df[column_name].values,
+	        'bo-')
+	ax.set(xlabel=labels[0],
+	       ylabel=labels[1],
+	       title=labels[2])
 	
-	plt.boxplot(column_data, positions=class_id)
-	plt.title(f"Distribution of {column_target}", fontsize=10)
-	plt.xlabel(f"{column_id}")
-	plt.ylabel(f"Level of {column_target} ")
+	date_form = DateFormatter(dateformat)
+	ax.xaxis.set_major_formatter(date_form)
 	plt.show()
 
 
-def plot_all_box(df, column_id):
-	columns = df.columns.drop(labels=column_id)
-	for i in range(len(columns)):
-		plot_box_graphic(df, column_id, columns[i])
+def plot_month(df, column_name, year, month, dateformat, labels):
+	"""
+	Plot a whole month
+	:param pd.DataFrame df: the dataframe used
+	:param str column_name: the column used to plot
+	:param int year: the targeted year
+	:param int month: the targeted month
+	:param str dateformat: the dateformat for the horizontal axis
+	:param list labels: labels contains the xlabel, the ylabel and the title of the plot
+	"""
+	date1 = f"{year}-{month}-01"
+	date2 = f"{year}-{month + 1}-01"
+	plot_between_dates(df=df, column_name=column_name, dates=[date1, date2], dateformat=dateformat, labels=labels)
 
 
-def plot_scatter_graphic(df, column_id, columns_targets):
+def plot_between_dates(df, column_name, dates=None, dateformat="%y-%m-%d",
+                       labels=None):
 	"""
-	Create a scatter graphic
-	Scatter plot is a useful method to see the correlation between 2 features
-	:param pd.DataFrame df: the dataframe
-	:param str column_id: the name of the class column
-	:param list columns_targets: list of a coupe of targeted columns
-	"""
-	color_list = ["r", "g"]
-	marker_list = ["o", "s"]
-	class_id = np.unique(df[column_id])
 	
-	for id_value in class_id:
-		column_data = []
-		indices = np.where(df[column_id] == id_value)
-		
-		for column_name in columns_targets:
-			column_data.append(df[column_name].values[indices])
-		
-		data_label = f"{column_id} | {str(id_value)}"
-		
-		plt.scatter(columns_targets[0], columns_targets[1], c=color_list[id_value], alpha=0.5,
-		            marker=marker_list[id_value], edgecolor="k", label=data_label)  # o : circle
-	plt.title(f"{columns_targets[0]} vs. {columns_targets[1]}", fontsize=10)
-	plt.xlabel(f"{columns_targets[0]}")
-	plt.ylabel(f"{columns_targets[1]}")
-	plt.show()
-
-
-def plot_all_scatter(df, column_id):
-	columns = df.columns.drop(labels=column_id)
-	for i in range(len(columns)):
-		for j in range(len(columns)):
-			if i > j:
-				plot_scatter_graphic(df, column_id, [columns[i], columns[j]])
-
-
-def plot_HeatMap_graphic(df):
-	f, ax = plt.subplots(figsize=(15, 15))
-	sns.heatmap(df.corr(), annot=True, linewidths=0.5, fmt='.1f', ax=ax)
-	plt.show()
+	:param pd.DataFrame df: the dataframe used
+	:param str column_name: the column used to plot
+	:param dates: The two dates between which the plot is made
+	:param str dateformat: the dateformat for the horizontal axis
+	:param list labels: labels contains the xlabel, the ylabel and the title of the plot
+	:return:
+	"""
+	if dates is None:
+		dates = ['2013-01-01', '2013-02-02']
+	mask = (df.index >= dates[0]) & (df.index < dates[1])
+	plot_time_series(df.loc[mask], column_name, dateformat, labels)

@@ -29,17 +29,16 @@ def get_data(path, sep=',', header=0, txt=True) -> pd.DataFrame:
 	return data
 
 
-def get_class(df, class_id, year) -> pd.DataFrame:
+def get_class(df, year) -> pd.DataFrame:
 	"""
 	Get class of the dataFrame depend to class_id and the year
 	:param pd.DataFrame df: the data frame used
-	:param str class_id: the value used as classes
 	:param int year: the year in which we focus
 	:return: the dataFrame containing data from the year only
 	:rtype: pd.DataFrame
 	"""
 	# Creating a mask between the start and the end of the year
-	mask = (df[class_id] > str(year-1)+"-12-31") & (df[class_id] < str(year+1)+"-01-01")
+	mask = (df.index >= str(year-1)+"-12-31") & (df.index < str(year+1)+"-01-01")
 	return df.loc[mask]
 
 
