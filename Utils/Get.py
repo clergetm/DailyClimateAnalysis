@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+import datetime
+from dateutil import parser
 
 
 def get_data(path, sep=',', header=0, txt=True) -> pd.DataFrame:
@@ -12,7 +14,6 @@ def get_data(path, sep=',', header=0, txt=True) -> pd.DataFrame:
 	:return: the dataframe of the csv
 	:rtype: pd.DataFrame
 	"""
-	
 	data = pd.read_csv(path, sep=sep, header=header)
 	
 	# Get the shape of the data
@@ -25,7 +26,7 @@ def get_data(path, sep=',', header=0, txt=True) -> pd.DataFrame:
 		print("\nFeatures : ")
 		for column_name in data.columns:
 			print(f" - {column_name}")
-		
+	
 	return data
 
 
@@ -38,7 +39,7 @@ def get_class(df, year) -> pd.DataFrame:
 	:rtype: pd.DataFrame
 	"""
 	# Creating a mask between the start and the end of the year
-	mask = (df.index >= str(year-1)+"-12-31") & (df.index < str(year+1)+"-01-01")
+	mask = (df.index >= str(year - 1) + "-12-31") & (df.index < str(year + 1) + "-01-01")
 	return df.loc[mask]
 
 
@@ -76,3 +77,27 @@ def get_duplicate(df, on="dataframe", keep=False) -> pd.DataFrame:
 	else:
 		# Obtains duplicate row based on one column
 		return df[df[on].duplicated(keep=keep)]
+
+
+def get_specs(df, signal, dates, block, step, specs):
+	"""
+	Get a dataframe with specifications calculated
+	:param pd.DataFrame df: the dataframe used
+	:param str signal: the column used as a signal
+	:param list dates: The two dates between which the values are taken
+	:param int block: The number of date in one window
+	:param int step: The number of different dates between two window following each other
+	:param list specs: The list of extracted specifications
+	:return pd.DataFrame res: The dataframe of extracted specifications
+	"""
+	start = parser.parse(dates[0])  # Assuming that date[1] > date[0]
+	end = parser.parse(dates[1])
+	maximum = (end - start).days + 1  # The numbers of days +1 for the last day
+	res = pd.DataFrame(columns=specs)
+	for i in range(0, maximum - block, step):
+		first = start + datetime.timedelta(i)
+		last = first + datetime.timedelta(block)
+		mask = (df.index >= first) & (df.index < last)
+		slice_df = df[signal].loc[mask]
+		res = res.append(slice_df.agg(specs),ignore_index=True) # aggregate the specifications
+	return res
