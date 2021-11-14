@@ -36,5 +36,4 @@ if __name__ == '__main__':
 	dataFrame['date'] = pd.to_datetime(dataFrame['date'])
 	dataFrame.set_index("date", inplace=True)
 	
-	# plot_month(dataFrame, 'meantemp', 2013, 1, '%d', ["Days", "Mean Temperatures", "Mean temperatures per day"])
-	plot_time_slider(dataFrame, 'meantemp', ['2013-01-01', '2017-04-24'], 30, 5, 'timeslider of meantemp')
+	plot_time_slider(dataFrame, 'meantemp', ['2013-01-01', '2013-04-24'], 30, 5, 'TimeSlider of Mean Temperature')

@@ -1,6 +1,8 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from matplotlib.dates import DateFormatter
+from matplotlib.ticker import AutoMinorLocator
 
 
 def plot_time_series(df, column_name, dateformat="%y-%m-%d", labels=None):
@@ -58,45 +60,70 @@ def plot_between_dates(df, column_name, dates=None, dateformat="%y-%m-%d",
 	plot_time_series(df.loc[mask], column_name, dateformat, labels)
 
 
-def plot_time_slider(df, column_name, dates, block, i, title):
+def plot_time_slider(df, column_name, dates, block, step, title):
 	"""
 	Plot the whole time slider between two dates
-
 	:param pd.DataFrame df: the dataframe used
 	:param str column_name: the column used to plot
 	:param list dates: The two dates between which the plot is made
 	:param int block: the number of date in one subplot
-	:param int i: the number of different dates between two subplots following each other
+	:param int step: the number of different dates between two subplots following each other
 	:param str title: the title of the plot
 	"""
 	import datetime
 	from dateutil import parser
-	from datetime import date
-	import math
+	import os
+	import glob
+	
+	time_slider_path = "Files/Out/TimeSlider"
+	files = glob.glob(time_slider_path + "/*")
+	for f in files:
+		os.remove(f)
 	
 	# Get all variables needed
-	max_col = 2
 	start = parser.parse(dates[0])  # Assuming that date[1] > date[0]
 	end = parser.parse(dates[1])
-	maximum = (end - start).days  # The numbers of days between the two dates
-	
-	nb_subplot = math.ceil(maximum / block)  # How many subplot will be created
-	nb_row_subplot = math.ceil(nb_subplot / max_col)  # How many row will be created for subplots
+	maximum = (end - start).days + 1  # The numbers of days +1 for the last day
 	
 	# Create the plot
-
-	for row in range(0, nb_row_subplot):
-		fig, ax = plt.subplots(max_col)
-		fig.subplots_adjust(hspace=2.5)
-		fig.suptitle(title)
-		for col in range(0, max_col):
-			start += datetime.timedelta(col * i)
-			last = start + datetime.timedelta(block) if start + datetime.timedelta(block) <= end else end
-			mask = (df.index >= start) & (df.index < last)
-			slice_df = df.loc[mask]
-			ax[col].plot(slice_df.index.values,
-			                  slice_df[column_name].values,
-			                  'bo-')
-			ax[col].tick_params(labelrotation=25)
-		plt.show()
-	
+	# For y ticks on each plot we need the max and min value of 'column_name'
+	# And no need to do this calculation every time
+	y_maximum = df[column_name].max()
+	y_minimum = df[column_name].min()
+	for i in range(0, maximum - block, step):
+		fig, ax = plt.subplots(figsize=(20, 10))
+		first = start + datetime.timedelta(i)
+		last = first + datetime.timedelta(block)
+		mask = (df.index >= first) & (df.index < last)
+		slice_df = df.loc[mask]
+		ax.plot(slice_df.index.values,
+		        slice_df[column_name].values,
+		        'bo-')
+		
+		# Manage x and y parameters
+		ax.set_title(title +
+		             f" between {str(first.strftime('%Y-%m-%d'))} and {str(last.strftime('%Y-%m-%d'))}",
+		             fontsize=16)
+		# Ideas from https://stackoverflow.com/questions/66169989/ensuring-first-and-last-date-ticks-in-x-axis-matplotlib
+		# Create list of daily ticks made of timestamp objects
+		daily_ticks = [timestamp[1] for timestamp in enumerate(slice_df.index)]
+		# Create the ticks for the plot, values range from 3 to 3 and always have the last value as ticks too
+		ticks = np.unique(np.append(daily_ticks[::3], daily_ticks[-1]))
+		# Create tick labels from tick timestamps
+		labels = [timestamp.strftime('%m-%d') for idx, timestamp in enumerate(ticks)]
+		
+		ax.set_xticks(ticks)
+		ax.set_xticklabels(labels)
+		ax.set_xlim(first, last)
+		ax.tick_params(axis="x", direction="in", labelrotation=45)
+		ax.xaxis.grid(color="grey", linestyle="dashed")  # vertical lines
+		
+		ax.set_ylim(y_minimum, y_maximum)
+		ax.tick_params(axis="y", direction="inout")
+		ax.grid(axis="y", color="black", alpha=.5, linewidth=.5)
+		ax.yaxis.set_minor_locator(AutoMinorLocator())
+		# Save the plot
+		plt.savefig(
+			time_slider_path + "/" + f"plot_{(start + datetime.timedelta(i)).strftime('%Y_%m_%d')}--"
+			                         f"{(last - datetime.timedelta(1)).strftime('%Y_%m_%d')}" + ".png")
+		plt.close(fig)
