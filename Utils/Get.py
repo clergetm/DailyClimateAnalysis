@@ -99,5 +99,5 @@ def get_specs(df, signal, dates, block, step, specs):
 		last = first + datetime.timedelta(block)
 		mask = (df.index >= first) & (df.index < last)
 		slice_df = df[signal].loc[mask]
-		res = res.append(slice_df.agg(specs),ignore_index=True) # aggregate the specifications
+		res = res.append(slice_df.agg(specs), ignore_index=True)  # aggregate the specifications
 	return res
