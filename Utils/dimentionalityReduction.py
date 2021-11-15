@@ -3,16 +3,15 @@ import pickle
 
 from sklearn.ensemble import ExtraTreesClassifier
 
-
 ########################################################################################################################
 #                                                    USER PARAMETERS                                                   #
 ########################################################################################################################
 
 # Define the path name of your .pickle file (dataset)
-path_name = ""
+path_name = "../Files/dailyDelhiClimate.pkl"
 
 # Define the number of attribute to select
-attribute_number_to_select = 5
+attribute_number_to_select = 2
 
 ########################################################################################################################
 #                                                   LOAD THE DATASET                                                   #
@@ -21,7 +20,7 @@ attribute_number_to_select = 5
 # Load the dataset (you can modify the variables to be load. In this case, we have x an array of the features extracted
 # for each instance and y a list of labels)
 with open(path_name, 'rb') as file:
-    x, y = pickle.load(file)
+	x, y = pickle.load(file)
 
 ########################################################################################################################
 #                                    REDUCE THE DIMENSIONALITY BY SELECTING FEATURES                                   #
@@ -39,3 +38,7 @@ importance_scores = classifier_model.feature_importances_
 # Maintenant c'est a votre tour de coder le reste.
 # Le reste doit extraire de x les N meilleurs attributs et afficher un rapport des attributs selectionnes par ordre
 # croissant d'importances. Puis a la fin, vous sauvegarderez le nouveau dataset.
+
+print(f"{x=} {y=}")
+print(f"{classifier_model=}")
+print(f"{importance_scores=}")

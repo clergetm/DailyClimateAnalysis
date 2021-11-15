@@ -37,4 +37,5 @@ if __name__ == '__main__':
 	dataFrame.set_index("date", inplace=True)
 	
 	# plot_time_slider(dataFrame, 'meantemp', ['2013-01-01', '2017-04-24'], 30, 5, 'TimeSlider of Mean Temperature')
-	print(get_specs(dataFrame, 'meantemp', ['2013-01-01', '2017-04-24'], 30, 5, ['mean','std']))
+	df_specs = get_specs(dataFrame, 'meantemp', ['2013-01-01', '2017-04-24'], 30, 5, ['mean','std'])
+	df_specs.to_pickle("./Files/dailyDelhiClimate.pkl")
