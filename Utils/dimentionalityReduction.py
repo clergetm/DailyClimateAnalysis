@@ -8,10 +8,7 @@ from sklearn.ensemble import ExtraTreesClassifier
 ########################################################################################################################
 
 # Define the path name of your .pickle file (dataset)
-path_name = "../Files/dailyDelhiClimate.pkl"
-
-# Define the number of attribute to select
-attribute_number_to_select = 2
+path_name = "../Files/Out/DailyDelhiClimate.pkl"
 
 ########################################################################################################################
 #                                                   LOAD THE DATASET                                                   #
@@ -21,6 +18,10 @@ attribute_number_to_select = 2
 # for each instance and y a list of labels)
 with open(path_name, 'rb') as file:
 	x, y = pickle.load(file)
+	
+# Define the number of attribute to select
+attribute_number_to_select = len(x.columns)
+
 
 ########################################################################################################################
 #                                    REDUCE THE DIMENSIONALITY BY SELECTING FEATURES                                   #

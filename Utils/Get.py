@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import datetime
 from dateutil import parser
+from scipy import stats
 
 
 def get_data(path, sep=',', header=0, txt=True) -> pd.DataFrame:
@@ -79,25 +80,162 @@ def get_duplicate(df, on="dataframe", keep=False) -> pd.DataFrame:
 		return df[df[on].duplicated(keep=keep)]
 
 
-def get_specs(df, signal, dates, block, step, specs):
+def get_specs(df, signal, dates, time_window_length, non_overlapping_length):
 	"""
 	Get a dataframe with specifications calculated
 	:param pd.DataFrame df: the dataframe used
 	:param str signal: the column used as a signal
 	:param list dates: The two dates between which the values are taken
-	:param int block: The number of date in one window
-	:param int step: The number of different dates between two window following each other
-	:param list specs: The list of extracted specifications
-	:return pd.DataFrame res: The dataframe of extracted specifications
+	:param int time_window_length: The number of date in one window
+	:param int non_overlapping_length: The number of different dates between two window following each other
+	:return pd.DataFrame: The dataframe of extracted specifications
 	"""
 	start = parser.parse(dates[0])  # Assuming that date[1] > date[0]
 	end = parser.parse(dates[1])
 	maximum = (end - start).days + 1  # The numbers of days +1 for the last day
-	res = pd.DataFrame(columns=specs)
-	for i in range(0, maximum - block, step):
+	res_data = []
+	feature_list = []
+	y_data = []
+	for i in range(0, maximum - time_window_length, non_overlapping_length):
+		# Create the mask of dates
 		first = start + datetime.timedelta(i)
-		last = first + datetime.timedelta(block)
+		last = first + datetime.timedelta(time_window_length)
 		mask = (df.index >= first) & (df.index < last)
+		# Get a part of the dataframe that matches the mask
 		slice_df = df[signal].loc[mask]
-		res = res.append(slice_df.agg(specs), ignore_index=True)  # aggregate the specifications
-	return res
+		
+		# Get the specifications for this part
+		vector_features, feature_list = get_all_specs(slice_df)
+		res_data.append(vector_features)
+		y_data.append(
+			get_season(first.date()))
+	# Get the seasons for this mask
+	
+	res_columns = [f"{feature}_{signal}" for feature in feature_list]
+	return pd.DataFrame(res_data, columns=res_columns), y_data
+
+
+def get_specs_min(df):
+	"""
+	Get the min value of the Dataframe
+	:param pd.DataFrame df: the currently used DataFrame
+	:return: the min value
+	:rtype: float
+	"""
+	return np.min(df, axis=0)
+
+
+def get_specs_max(df):
+	"""
+	Get the max value of the Dataframe
+	:param pd.DataFrame df: the currently used DataFrame
+	:return: the max value
+	:rtype: float
+	"""
+	return np.max(df, axis=0)
+
+
+def get_specs_mean(df):
+	"""
+	Get the mean value of the Dataframe
+	:param pd.DataFrame df: the currently used DataFrame
+	:return: the mean value
+	:rtype: float
+	"""
+	return np.mean(df, axis=0)
+
+
+def get_specs_std(df):
+	"""
+	Get the std value of the Dataframe
+	:param pd.DataFrame df: the currently used DataFrame
+	:return: the std value
+	:rtype: float
+	"""
+	return np.std(df, axis=0)
+
+
+def get_specs_skewness(df):
+	"""
+	Get the skewness value of the Dataframe
+	:param pd.DataFrame df: the currently used DataFrame
+	:return: the skewness value
+	:rtype: float
+	"""
+	return stats.skew(df, axis=0)
+
+
+def get_specs_kurtosis(df):
+	"""
+	Get the kurtosis value of the Dataframe
+	:param pd.DataFrame df: the currently used DataFrame
+	:return: the kurtosis value
+	:rtype: float
+	"""
+	return stats.kurtosis(df, axis=0)
+
+
+def get_all_specs(df):
+	"""
+	Get all specifications and their order
+	:param pd.DataFrame df: the currently used DataFrame
+	:return: specs, the array of all specs and a list of type of specs
+	:rtype: (numpy.array,list)
+	"""
+	specs = get_specs_min(df)
+	specs = np.append(specs, get_specs_max(df))
+	specs = np.append(specs, get_specs_mean(df))
+	specs = np.append(specs, get_specs_std(df))
+	specs = np.append(specs, get_specs_skewness(df))
+	specs = np.append(specs, get_specs_kurtosis(df))
+	return specs, ["min", "max", "mean", "std", "skewness", "kurtosis"]
+
+
+def get_season(target_date):
+	"""
+	Get the season of the given date
+	:param datetime.date target_date:
+	:return: the season
+	:rtype: str
+	"""
+	year = target_date.year
+	#           seasons :                   start,                                    end
+	seasons = {"spring": [datetime.date(year=year, month=3, day=20), datetime.date(year=year, month=6, day=20)],
+	           "summer": [datetime.date(year=year, month=6, day=21), datetime.date(year=year, month=9, day=21)],
+	           "autumn": [datetime.date(year=year, month=9, day=22), datetime.date(year=year, month=12, day=20)],
+	           # "winter": [datetime.date(year=year, month=12, day=21), datetime.date(year=year, month=12, day=31)],
+	           # "winter": [datetime.date(year=year, month=1, day=1), datetime.date(year=year, month=3, day=19)]
+	           }
+
+	for i in range(0, len(seasons)):
+		start, end = list(seasons.values())[i]
+		
+		# If we are in the the same month as a starting month of a season
+		if start.month == target_date.month:
+			# We check the date in that case
+			# If the target day is superior or equal to the starting day of the starting month of a season
+			if target_date.day >= start.day:
+				# Return this season
+				return list(seasons.keys())[i]
+			# If the target day is inferior to the starting day of the starting month of a season
+			else:
+				# Return the precedent season
+				return "winter" if i == 0 else list(seasons.keys())[i-1]
+		# If we are between the starting and ending months of a season
+		elif start.month < target_date.month < end.month:
+			# Return this season
+			return list(seasons.keys())[i]
+		# If we are in the the same month as a ending month of a season
+		elif end.month == target_date.month:
+			# We check the date in that case
+			# If the target day is superior or equal to the starting day of the starting month of a season
+			if target_date.day <= start.day:
+				# Return this season
+				return list(seasons.keys())[i]
+			# If the target day is superior to the starting day of the starting month of a season
+			else:
+				# Return the next season
+				return list(seasons.keys())[i + 1] if i < 2 else "winter"
+
+	# If not specifications found, then the date is a winter date
+	return "winter"
