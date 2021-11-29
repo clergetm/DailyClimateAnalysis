@@ -95,24 +95,22 @@ def get_specs(df, signal, dates, time_window_length, non_overlapping_length):
 	maximum = (end - start).days + 1  # The numbers of days +1 for the last day
 	res_data = []
 	feature_list = []
-	y_data = []
 	for i in range(0, maximum - time_window_length, non_overlapping_length):
+
 		# Create the mask of dates
 		first = start + datetime.timedelta(i)
 		last = first + datetime.timedelta(time_window_length)
 		mask = (df.index >= first) & (df.index < last)
+
 		# Get a part of the dataframe that matches the mask
 		slice_df = df[signal].loc[mask]
 		
 		# Get the specifications for this part
 		vector_features, feature_list = get_all_specs(slice_df)
 		res_data.append(vector_features)
-		y_data.append(
-			get_season(first.date()))
-	# Get the seasons for this mask
 	
 	res_columns = [f"{feature}_{signal}" for feature in feature_list]
-	return pd.DataFrame(res_data, columns=res_columns), y_data
+	return pd.DataFrame(res_data, columns=res_columns)
 
 
 def get_specs_min(df):
@@ -175,6 +173,26 @@ def get_specs_kurtosis(df):
 	return stats.kurtosis(df, axis=0)
 
 
+def get_specs_variance(df):
+	"""
+	Get the variance value of the Dataframe
+	:param pd.DataFrame df: the currently used DataFrame
+	:return: the variance value
+	:rtype: float
+	"""
+	return np.var(df, axis=0)
+
+
+def get_specs_ptp(df):
+	"""
+	Get the peak-to-peak value of the Dataframe
+	:param pd.DataFrame df: the currently used DataFrame
+	:return: the peak-to-peak value
+	:rtype: float
+	"""
+	return np.ptp(df, axis=0)
+
+
 def get_all_specs(df):
 	"""
 	Get all specifications and their order
@@ -188,9 +206,33 @@ def get_all_specs(df):
 	specs = np.append(specs, get_specs_std(df))
 	specs = np.append(specs, get_specs_skewness(df))
 	specs = np.append(specs, get_specs_kurtosis(df))
-	return specs, ["min", "max", "mean", "std", "skewness", "kurtosis"]
+	specs = np.append(specs, get_specs_variance(df))
+	specs = np.append(specs, get_specs_ptp(df))
+	return specs, ["min", "max", "mean", "std", "skewn", "kurt", "var", "ptp"]
 
 
+def get_y_data(dates, time_window_length, non_overlapping_length):
+	"""
+	Get the season in which the first date is for each time window
+	:param list dates: list of 2 elements : the bounds
+	:param int time_window_length: the length of the window
+	:param int non_overlapping_length: the number of non overlapping element
+	:return: y_data, the list of seasons
+	:rtype y_data: list
+	"""
+	start = parser.parse(dates[0])  # Assuming that date[1] > date[0]
+	end = parser.parse(dates[1])
+	maximum = (end - start).days + 1  # The numbers of days +1 for the last day
+	y_data = []
+	for i in range(0, maximum - time_window_length, non_overlapping_length):
+		
+		# Get the season of the 'first' date of the time slider window
+		first = start + datetime.timedelta(i)
+		y_data.append(get_season(first.date()))
+	
+	return y_data
+	
+	
 def get_season(target_date):
 	"""
 	Get the season of the given date
@@ -198,6 +240,7 @@ def get_season(target_date):
 	:return: the season
 	:rtype: str
 	"""
+	# Year is use only to initialize date objects but never used
 	year = target_date.year
 	#           seasons :                   start,                                    end
 	seasons = {"spring": [datetime.date(year=year, month=3, day=20), datetime.date(year=year, month=6, day=20)],
